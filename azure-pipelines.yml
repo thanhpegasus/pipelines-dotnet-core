@@ -20,10 +20,12 @@ parameters:
 - name: notificationEmail
   displayName: 'Notification Email'
   type: string
+  default: ' '
 
 - name: slackWebhookUrl
   displayName: 'Slack Webhook URL'
   type: string
+  default: ' '
 
 stages:
 - stage: Build
