@@ -1,8 +1,3 @@
-# ASP.NET Core
-# Build and test ASP.NET Core projects targeting .NET Core.
-# Add steps that run tests, create a NuGet package, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
-
 trigger:
 - master
 
@@ -21,49 +16,76 @@ parameters:
     - testing
     - dev
   default: 'dev'
-  
+
+- name: notificationEmail
+  displayName: 'Notification Email'
+  type: string
+  default: ''  # Default to an empty string
+
+- name: slackWebhookUrl
+  displayName: 'Slack Webhook URL'
+  type: string
+  default: ''  # Default to an empty string
+
 stages:
 - stage: Build
   displayName: 'Build Application'
+  condition: always()  # Prevents the stage from being rerun
   jobs:
   - job: DotNetBuild
     displayName: 'Run dotnet build command'
     steps:
     - script: dotnet build --configuration $(buildConfiguration)
       displayName: 'dotnet build $(buildConfiguration)'
-    - powershell: |
-        $selectedEnvironment = Read-Host "Select environment (e.g., prod, testing, dev)"
-        Write-Host "Selected environment: $selectedEnvironment"
+    
+    # Assign a value to an output variable using Bash
+    - bash: |
+        selectedEnvironment=$(echo $(environment))
         echo "##vso[task.setvariable variable=SelectedEnvironment;isOutput=true]$selectedEnvironment"
-      displayName: 'Select Environment'
-    - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        script: |
-          $selectedEnvironment = "$(SelectedEnvironment)"
-          if ($selectedEnvironment -eq "prod") {
-            # Add deployment tasks for the production environment
-          }
-          elseif ($selectedEnvironment -eq "testing") {
-            # Add deployment tasks for the testing environment
-          }
-          elseif ($selectedEnvironment -eq "dev") {
-            # Add deployment tasks for the development environment
-          }
-          else {
-            Write-Host "Invalid environment selected: $selectedEnvironment"
-            exit 1
-          }
-      displayName: 'Select Deployment Tasks'
+      displayName: 'Set Output Variable'
+
 - stage: Deploy
   displayName: 'Deploy Application'
   jobs:
   - deployment: Deploy
-    displayName: 'Deploy .net application'
+    displayName: 'Deploy .NET application'
     environment: 'YourEnvironmentName'
     strategy:
       runOnce:
         deploy:
           steps:
-          - script: echo "Deployment is progressing"
+          - script: echo "Deployment is progressing to environment $(SelectedEnvironment)"
             displayName: 'Run shell script'
+
+- stage: Notification
+  displayName: 'Notification'
+  dependsOn: Deploy
+  jobs:
+  - job: SendNotification
+    displayName: 'Send Deployment Notification'
+    steps:
+    # Check if both notificationEmail and slackWebhookUrl are empty
+    - bash: |
+        if [[ -z "$(notificationEmail)" && -z "$(slackWebhookUrl)" ]]; then
+          echo "Error: Both notificationEmail and slackWebhookUrl are empty."
+          exit 1
+        fi
+      displayName: 'Check Notification Inputs'
+
+    # Send email if notificationEmail is specified
+    - task: SendEmail@1
+      displayName: 'Send Email Notification'
+      condition: and(succeeded(), ne(variables['notificationEmail'], ''))
+      inputs:
+        to: '$(notificationEmail)'
+        subject: 'Deployment Completed'
+        messageBody: 'The deployment to $(SelectedEnvironment) environment has been completed successfully.'
+
+    # Send Slack message if slackWebhookUrl is specified
+    - task: SlackMessage@1
+      displayName: 'Send Slack Notification'
+      condition: and(succeeded(), ne(variables['slackWebhookUrl'], ''))
+      inputs:
+        slackConnection: 'YourSlackServiceConnection'  # Create a Slack service connection in Azure DevOps
+        channelName: '#your-channel'  # Specify your Slack channel
+        message: 'Deployment to $(SelectedEnvironment) environment has been completed successfully.'
