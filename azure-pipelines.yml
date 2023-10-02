@@ -24,8 +24,12 @@ stages:
 - stage: Deploy
   displayName: 'Deploy Application'
   jobs:
-  - job: Deploy
+  - deployment: Deploy
     displayName: 'Deploy .net application'
-    steps:
-    - script: echo "Deployment is progresing"
-      displayName: 'Run shell script'
+    environment: 'YourEnvironmentName'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo "Deployment is progressing"
+            displayName: 'Run shell script'
