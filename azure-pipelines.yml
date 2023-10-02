@@ -12,6 +12,16 @@ pool:
 variables:
   buildConfiguration: 'Release'
 
+parameters:
+- name: environment
+  displayName: 'Select Environment'
+  type: string
+  values:
+    - prod
+    - testing
+    - dev
+  default: 'dev'
+  
 stages:
 - stage: Build
   displayName: 'Build Application'
