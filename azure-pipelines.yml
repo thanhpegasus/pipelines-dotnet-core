@@ -21,6 +21,30 @@ stages:
     steps:
     - script: dotnet build --configuration $(buildConfiguration)
       displayName: 'dotnet build $(buildConfiguration)'
+    - powershell: |
+        $selectedEnvironment = Read-Host "Select environment (e.g., prod, testing, dev)"
+        Write-Host "Selected environment: $selectedEnvironment"
+        echo "##vso[task.setvariable variable=SelectedEnvironment;isOutput=true]$selectedEnvironment"
+      displayName: 'Select Environment'
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          $selectedEnvironment = "$(SelectedEnvironment)"
+          if ($selectedEnvironment -eq "prod") {
+            # Add deployment tasks for the production environment
+          }
+          elseif ($selectedEnvironment -eq "testing") {
+            # Add deployment tasks for the testing environment
+          }
+          elseif ($selectedEnvironment -eq "dev") {
+            # Add deployment tasks for the development environment
+          }
+          else {
+            Write-Host "Invalid environment selected: $selectedEnvironment"
+            exit 1
+          }
+      displayName: 'Select Deployment Tasks'
 - stage: Deploy
   displayName: 'Deploy Application'
   jobs:
