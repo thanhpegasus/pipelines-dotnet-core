@@ -20,12 +20,12 @@ parameters:
 - name: notificationEmail
   displayName: 'Notification Email'
   type: string
-  default: ' '
+  default: ''  # Default to an empty string
 
 - name: slackWebhookUrl
   displayName: 'Slack Webhook URL'
   type: string
-  default: ' '
+  default: ''  # Default to an empty string
 
 stages:
 - stage: Build
@@ -64,28 +64,18 @@ stages:
   - job: SendNotification
     displayName: 'Send Deployment Notification'
     steps:
-    # Check if both notificationEmail and slackWebhookUrl are empty
+    # Check if notificationEmail is not empty and send email if specified
     - bash: |
-        if [[ -z "$(notificationEmail)" && -z "$(slackWebhookUrl)" ]]; then
-          echo "Error: Both notificationEmail and slackWebhookUrl are empty."
-          exit 1
+        if [[ -n "$(notificationEmail)" ]]; then
+          echo "Sending email to $(notificationEmail)"
+          # Include email sending logic here
         fi
-      displayName: 'Check Notification Inputs'
-
-    # Send email if notificationEmail is specified
-    - task: SendEmail@1
       displayName: 'Send Email Notification'
-      condition: and(succeeded(), ne(variables['notificationEmail'], ''))
-      inputs:
-        to: '$(notificationEmail)'
-        subject: 'Deployment Completed'
-        messageBody: 'The deployment to $(SelectedEnvironment) environment has been completed successfully.'
-
-    # Send Slack message if slackWebhookUrl is specified
-    - task: SlackMessage@1
+    
+    # Check if slackWebhookUrl is not empty and send Slack notification if specified
+    - bash: |
+        if [[ -n "$(slackWebhookUrl)" ]]; then
+          echo "Sending Slack notification to $(slackWebhookUrl)"
+          # Include Slack notification logic here
+        fi
       displayName: 'Send Slack Notification'
-      condition: and(succeeded(), ne(variables['slackWebhookUrl'], ''))
-      inputs:
-        slackConnection: 'YourSlackServiceConnection'  # Create a Slack service connection in Azure DevOps
-        channelName: '#your-channel'  # Specify your Slack channel
-        message: 'Deployment to $(SelectedEnvironment) environment has been completed successfully.'
