@@ -12,6 +12,20 @@ pool:
 variables:
   buildConfiguration: 'Release'
 
-steps:
-- script: dotnet build --configuration $(buildConfiguration)
-  displayName: 'dotnet build $(buildConfiguration)'
+stages:
+- stage: Build
+  displayName: 'Build Application'
+  jobs:
+  - job: DotNetBuild
+    displayName: 'Run dotnet build command'
+    steps:
+    - script: dotnet build --configuration $(buildConfiguration)
+      displayName: 'dotnet build $(buildConfiguration)'
+- stage: Deploy
+  displayName: 'Deploy Application'
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy .net application'
+    steps:
+    - script: echo "Deployment is progresing"
+      displayName: 'Run shell script'
